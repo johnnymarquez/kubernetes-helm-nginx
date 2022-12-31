@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:   # Information.
+  name: nginx
+  labels:
+    app: nginx
+spec:       # What to do.
+  replicas: 1
+  selector:       # Pods you want the deployment to manage.
+    matchLabels:
+      app: nginx
+  minReadySeconds: 0   # Number of seconds the controller should wait before considering the pod is ready.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+  template:       # Template requested for the pods.
+    metadata:
+      labels:
+        app: nginx  # The same labels should be set in order to avoid loops.
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        command: ["nginx"]
+        args: ["-g", "daemon off; worker_priority 10;"]
+        ports:
+        - containerPort: 80
+        env:
+        - name: VAR1
+          valueFrom:
+            configMapKeyRef:
+              key: var1
+              name: vars
+        - name: VAR2
+          valueFrom:
+            configMapKeyRef:
+              key: var2
+              name: vars
+        - name: VAR3
+          valueFrom:
+            secretKeyRef:
+              key: pass1
+              name: passwords
+              optional: true
+        - name: VAR4
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "200m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            port: 80
+            path: /
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vars
+data:
+  var1: value1
+  var2: value2
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: passwords
+stringData:
+  pass1: foo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: nginx

@@ -1,0 +1,27 @@
+# managed-cluster.yaml
+# A cluster with two managed nodegroups
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: default
+  region: eu-central-1
+
+managedNodeGroups:
+  - name: managed-ng-1
+    launchTemplate:
+      id: lt-
+#      version: "2" # optional (uses the default launch template version if unspecified)
+
+  - name: managed-ng-2
+    minSize: 2
+    desiredCapacity: 2
+    maxSize: 4
+    labels:
+      role: worker
+    tags:
+      nodegroup-name: managed-ng-2
+    privateNetworking: true
+    launchTemplate:
+      id: lt-
